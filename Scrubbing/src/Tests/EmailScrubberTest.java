@@ -1,4 +1,4 @@
-package test;
+package Tests;
 
 import Services.EmailScrubber;
 import org.junit.jupiter.api.BeforeEach;

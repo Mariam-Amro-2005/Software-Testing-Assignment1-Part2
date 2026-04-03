@@ -1,4 +1,4 @@
-package test;
+package Tests;
 
 import Interfaces.*;
 import Models.ScrubMode;
