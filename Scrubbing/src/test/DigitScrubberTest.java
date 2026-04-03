@@ -2,6 +2,7 @@ package test;
 
 import Services.DigitScrubber;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -9,6 +10,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("DigitScrubber Tests")
 class DigitScrubberTest {
 
     private DigitScrubber scrubber;
@@ -21,7 +23,8 @@ class DigitScrubberTest {
     // ==================== NEGATIVE TESTS (Exceptions) ====================
 
     @Test
-    void testScrub_nullInput() {
+    @DisplayName("Null input throws NullPointerException")
+    void testScrubNullInput() {
         NullPointerException exception = assertThrows(NullPointerException.class,
                 () -> scrubber.scrub(null));
         assertEquals("Input cannot be null", exception.getMessage());
@@ -29,7 +32,8 @@ class DigitScrubberTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "   ", "\t", "\n"})
-    void testScrub_blankInput(String blankInput) {
+    @DisplayName("Blank input throws IllegalArgumentException")
+    void testScrubBlankInput(String blankInput) {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> scrubber.scrub(blankInput));
         assertEquals("Input cannot be blank", exception.getMessage());
@@ -39,87 +43,93 @@ class DigitScrubberTest {
 
     @ParameterizedTest
     @CsvSource({
-            "abc, abc",               // no digits → unchanged
-            "123, XXX",               // only digits
-            "abc123def, abcXXXdef",   // digits in middle
-            "123abc, XXXabc",         // digits at start
-            "abc123, abcXXX",         // digits at end
-            "a1b2c3, aXbXcX",         // interleaved digits
-            "Hello World 456, Hello World XXX"  // digits with spaces
+            "abc, abc",
+            "123, XXX",
+            "abc123def, abcXXXdef",
+            "123abc, XXXabc",
+            "abc123, abcXXX",
+            "a1b2c3, aXbXcX",
+            "Hello World 456, Hello World XXX"
     })
-    void testScrub_digitsWithoutPrice(String input, String expected) {
+    @DisplayName("Digits without price are scrubbed correctly")
+    void testScrubDigitsWithoutPrice(String input, String expected) {
         assertEquals(expected, scrubber.scrub(input));
     }
 
     // ==================== BOUNDARY VALUE TESTS ====================
 
     @Test
-    void testScrub_singleDigit() {
+    @DisplayName("Single digit becomes X")
+    void testScrubSingleDigit() {
         assertEquals("X", scrubber.scrub("5"));
     }
 
     @Test
-    void testScrub_digitAtVeryStart() {
+    @DisplayName("Digit at very start of string")
+    void testScrubDigitAtVeryStart() {
         assertEquals("Xabc", scrubber.scrub("5abc"));
     }
 
     @Test
-    void testScrub_digitAtVeryEnd() {
+    @DisplayName("Digit at very end of string")
+    void testScrubDigitAtVeryEnd() {
         assertEquals("abcX", scrubber.scrub("abc5"));
     }
 
     @Test
-    void testScrub_onlyDigitAndLetter() {
+    @DisplayName("Only digits and spaces")
+    void testScrubOnlyDigitAndLetter() {
         assertEquals("X X", scrubber.scrub("5 5"));
     }
 
     // ==================== PRICE PRESERVATION TESTS (Spec Requirement) ====================
-    // According to the spec: digits followed by '$' should NOT be scrubbed.
-    // The current implementation does NOT satisfy this. These tests will FAIL.
-    // They are included to reveal the defect.
+    // These tests reveal the defect: digits followed by '$' are not protected.
 
     @Test
-    void testScrub_priceWithSingleDigit() {
-        // Expected: "$" after digit protects the digit
+    @DisplayName("Price with single digit should not be scrubbed (defect)")
+    void testScrubPriceWithSingleDigit() {
         assertEquals("9$", scrubber.scrub("9$"));
-        // Current buggy implementation returns "X$" → test will fail
     }
 
     @Test
-    void testScrub_priceWithMultipleDigits() {
+    @DisplayName("Price with multiple digits should not be scrubbed (defect)")
+    void testScrubPriceWithMultipleDigits() {
         assertEquals("99$", scrubber.scrub("99$"));
     }
 
     @Test
-    void testScrub_mixedDigitsAndPrice() {
-        // "Order 123 for 99$" → digits "123" become "XXX", "99" in price remain "99"
+    @DisplayName("Mixed digits and price: only non-price digits scrubbed (defect)")
+    void testScrubMixedDigitsAndPrice() {
         assertEquals("Order XXX for 99$", scrubber.scrub("Order 123 for 99$"));
     }
 
     @Test
-    void testScrub_priceAtStartOfString() {
+    @DisplayName("Price at start of string (defect)")
+    void testScrubPriceAtStartOfString() {
         assertEquals("99$ is the price", scrubber.scrub("99$ is the price"));
     }
 
     @Test
-    void testScrub_priceAtEndOfString() {
+    @DisplayName("Price at end of string (defect)")
+    void testScrubPriceAtEndOfString() {
         assertEquals("Total is 99$", scrubber.scrub("Total is 99$"));
     }
 
     @Test
-    void testScrub_multiplePrices() {
+    @DisplayName("Multiple prices (defect)")
+    void testScrubMultiplePrices() {
         assertEquals("10$ and 20$", scrubber.scrub("10$ and 20$"));
     }
 
     @Test
-    void testScrub_dollarSignNotImmediatelyAfterDigit() {
-        // "99 $" has space before $ → not a price, so digits should be scrubbed
+    @DisplayName("Dollar sign not immediately after digit → digits scrubbed")
+    void testScrubDollarSignNotImmediatelyAfterDigit() {
         assertEquals("XX $", scrubber.scrub("99 $"));
     }
 
     @Test
-    void testScrub_dollarBeforeDigits() {
-        // "$99" → dollar before digits, not a price per spec → scrub digits
+    @DisplayName("Dollar before digits → digits scrubbed")
+    void testScrubDollarBeforeDigits() {
         assertEquals("$XX", scrubber.scrub("$99"));
     }
 }
