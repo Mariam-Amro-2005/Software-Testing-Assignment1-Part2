@@ -32,11 +32,10 @@ class EmailScrubberTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "   ", "\t", "\n"})
-    @DisplayName("Blank input currently throws NPE but should throw IAE (defect)")
+    @DisplayName("Blank input should throw IllegalArgumentException (defect: currently throws NPE)")
     void testScrubBlankInput(String blankInput) {
-        NullPointerException exception = assertThrows(NullPointerException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> scrubber.scrub(blankInput));
-        assertEquals("Input cannot be null or blank", exception.getMessage());
     }
 
     // ==================== POSITIVE TESTS (Happy Path) ====================
